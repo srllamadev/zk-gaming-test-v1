@@ -9,19 +9,24 @@
 </head>
 <body>
 
+<!-- Winner overlay -->
 <div id="winner-overlay">
   <div class="w-card">
+    <div class="w-confetti" id="w-confetti"></div>
     <div class="w-trophy">🏆</div>
+    <div class="w-title">Winner!</div>
     <div class="w-sub">Draw verified with ZK Proof · Stellar Protocol 25</div>
     <div id="w-addr" class="w-addr">—</div>
     <div id="w-prize" class="w-prize"></div>
     <div id="w-badge" class="w-badge">Entry #—</div>
-    <button class="btn btn-ghost" style="margin-top:12px" onclick="closeWinnerOverlay()">Close</button>
+    <div id="w-tx" class="w-tx" style="display:none"></div>
+    <button class="btn btn-ghost btn-overlay-close" onclick="closeWinnerOverlay()">✕ Close</button>
   </div>
 </div>
 
 <div id="app">
 
+  <!-- ── HEADER ──────────────────────────────────────────────── -->
   <header>
     <div class="logo">
       <div class="logo-icon">🎰</div>
@@ -39,185 +44,106 @@
     </div>
   </header>
 
-  <div class="phase-bar">
-    <div class="phase-step active" id="phase-0">① Setup</div>
-    <div class="phase-step" id="phase-1">② Commit</div>
-    <div class="phase-step" id="phase-2">③ Register</div>
-    <div class="phase-step" id="phase-3">④ Close</div>
-    <div class="phase-step" id="phase-4">⑤ Reveal</div>
-  </div>
-
-  <div class="stats-row">
-    <div class="stat">
-      <div class="stat-val" id="stat-participants">0</div>
-      <div class="stat-lbl">Participants</div>
+  <!-- ── WHEEL SECTION ───────────────────────────────────────── -->
+  <section class="wheel-section">
+    <div class="wheel-glow-ring"></div>
+    <div class="roulette-outer">
+      <div class="roulette-pointer">▼</div>
+      <canvas id="roulette-canvas" width="360" height="360"></canvas>
     </div>
-    <div class="stat">
-      <div class="stat-val" id="stat-winners">—</div>
-      <div class="stat-lbl">Winners</div>
+    <button id="spin-btn" class="btn btn-spin" onclick="startDraw()" disabled>
+      <span id="spin-btn-inner">🎰 Spin &amp; Draw</span>
+    </button>
+    <div class="wheel-stats">
+      <div class="wstat"><span class="wstat-val" id="stat-participants">0</span><span class="wstat-lbl">Players</span></div>
+      <div class="wstat-div"></div>
+      <div class="wstat"><span class="wstat-val" id="stat-prize">—</span><span class="wstat-lbl">XLM Prize</span></div>
+      <div class="wstat-div"></div>
+      <div class="wstat"><span class="wstat-val" id="stat-phase">SETUP</span><span class="wstat-lbl">Phase</span></div>
     </div>
-    <div class="stat">
-      <div class="stat-val" id="stat-prize">—</div>
-      <div class="stat-lbl">Prize (XLM)</div>
-    </div>
-    <div class="stat">
-      <div class="stat-val" id="stat-phase">SETUP</div>
-      <div class="stat-lbl">Phase</div>
-    </div>
-  </div>
+  </section>
 
-  <div class="bento">
+  <!-- ── FORM BENTO ──────────────────────────────────────────── -->
+  <section class="form-bento">
 
-    <div class="bcard span-2" id="bcard-setup">
-      <div class="bcard-title"><span class="icon">⚙️</span> Draw Setup</div>
-      <div class="title-line"></div>
-      <div class="setup-flow">
-
-        <div class="step-card active-step" id="step-a">
-          <div class="step-header">
-            <span class="step-num">1</span>
-            <span class="icon">👥</span> Number of Participants
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-end">
-            <div class="input-group" style="flex:1;margin-bottom:0">
-              <label>How many people will enter the draw?</label>
-              <input type="number" id="input-participants-count" placeholder="e.g. 10" min="2" max="500" />
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="confirmParticipantsCount()" style="padding:10px 20px;width:auto;margin-bottom:1px">
-              Confirm →
-            </button>
-          </div>
+    <!-- Step 1: wallet gate -->
+    <div class="fcard" id="fcard-wallet">
+      <div class="fcard-num">01</div>
+      <div class="fcard-title">Connect Wallet</div>
+      <p class="fcard-desc">Connect your Freighter wallet to start. You will be the draw host and prize sender.</p>
+      <button class="btn btn-primary" onclick="connectWallet()" id="btn-connect-form">
+        <span>🔗 Connect Freighter</span>
+      </button>
+      <div id="wallet-connected-state" style="display:none">
+        <div class="connected-pill">
+          <div class="wallet-dot on"></div>
+          <span id="wallet-short-label">—</span>
         </div>
+      </div>
+    </div>
 
-        <div class="step-card" id="step-b" style="opacity:.45;pointer-events:none">
-          <div class="step-header">
-            <span class="step-num">2</span>
-            <span class="icon">💰</span> Prize Amount
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-end">
-            <div class="input-group" style="flex:1;margin-bottom:0">
-              <label>Total XLM to distribute among winners</label>
-              <input type="number" id="input-prize-amount" placeholder="e.g. 100" min="0.0000001" step="any" />
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="confirmPrize()" style="padding:10px 20px;width:auto;margin-bottom:1px">
-              Confirm →
-            </button>
+    <!-- Step 2: prize + count -->
+    <div class="fcard fcard-disabled" id="fcard-setup">
+      <div class="fcard-num">02</div>
+      <div class="fcard-title">Draw Config</div>
+      <p class="fcard-desc">Set the total prize to distribute and the number of participants.</p>
+      <div class="field-row">
+        <div class="field">
+          <label>Prize (XLM)</label>
+          <div class="input-addon">
+            <input type="number" id="input-prize-amount" placeholder="100" min="0.0000001" step="any" />
+            <span class="addon">XLM</span>
           </div>
         </div>
-
-        <div class="step-card" id="step-c" style="opacity:.45;pointer-events:none">
-          <div class="step-header">
-            <span class="step-num">3</span>
-            <span class="icon">🏆</span> Number of Winners
-          </div>
-          <div style="display:flex;gap:10px;align-items:flex-end">
-            <div class="input-group" style="flex:1;margin-bottom:0">
-              <label>How many winners?</label>
-              <input type="number" id="input-winners-count" placeholder="e.g. 1" min="1" max="50" />
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="confirmWinners()" style="padding:10px 20px;width:auto;margin-bottom:1px">
-              Confirm →
-            </button>
+        <div class="field">
+          <label>Participants</label>
+          <div class="input-addon">
+            <input type="number" id="input-participants-count" placeholder="10" min="2" max="500" />
+            <span class="addon">pax</span>
           </div>
         </div>
-
       </div>
+      <button class="btn btn-primary" onclick="confirmSetup()" id="btn-confirm-setup">Confirm →</button>
     </div>
 
-    <div class="bcard span-2" id="bcard-wallets" style="display:none">
-      <div class="bcard-title"><span class="icon">🎟️</span> Participant Wallets</div>
-      <div class="title-line"></div>
-
-      <div class="wallet-progress">
-        <span id="wallet-progress-label">0 / <span id="wallet-total-label">0</span> registered</span>
-        <div class="wallet-progress-bar">
-          <div class="wallet-progress-fill" id="wallet-progress-fill" style="width:0%"></div>
-        </div>
+    <!-- Step 3: participant wallets -->
+    <div class="fcard fcard-disabled fcard-wide" id="fcard-wallets">
+      <div class="fcard-num">03</div>
+      <div class="fcard-title">Participant Wallets</div>
+      <div class="wallet-prog-row">
+        <span id="wprog-label">0 / 0 registered</span>
+        <div class="wprog-bar"><div class="wprog-fill" id="wprog-fill" style="width:0%"></div></div>
       </div>
-
-      <div id="wallet-inputs-section">
-        <div class="wallet-row">
-          <input type="text" id="input-participant" placeholder="G... Stellar address" />
-          <button class="btn btn-primary" onclick="doRegister()" style="width:auto;padding:10px 20px">
-            <span id="btn-register-spinner"></span> Add
-          </button>
-        </div>
-        <p class="text-muted" style="margin-bottom:12px;font-size:.76rem">
-          Enter each participant'''s Stellar wallet address (G..., 56 chars).
-        </p>
+      <div class="wallet-entry-row" id="wallet-entry-row">
+        <input type="text" id="input-participant" placeholder="G... Stellar address (56 chars)" />
+        <button class="btn btn-primary btn-sm" onclick="addParticipant()" id="btn-add-wallet">+ Add</button>
       </div>
-
-      <div id="participants-grid">
-        <p class="text-muted" style="text-align:center;padding:16px 0">No participants yet.</p>
-      </div>
-
-      <div class="divider"></div>
-
-      <div id="wallet-actions" style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primary" id="btn-commit-main" onclick="doCommit()" style="flex:1">
-          <span id="btn-commit-spinner"></span> 🔒 Publish Commitment
-        </button>
-        <button class="btn btn-ghost" id="btn-close-main" onclick="doCloseRegistrations()" style="flex:1" disabled>
-          <span id="btn-close-spinner"></span> 🔐 Close Registrations
-        </button>
-      </div>
+      <div id="participants-grid"></div>
     </div>
 
-    <div class="bcard span-row-2" style="grid-column:3;grid-row:1/3;display:flex;flex-direction:column;align-items:center;gap:20px;justify-content:center">
-      <div class="bcard-title" style="width:100%"><span class="icon">🎡</span> Wheel</div>
-      <div class="roulette-wrap">
-        <div class="roulette-outer">
-          <div class="roulette-pointer">▼</div>
-          <canvas id="roulette-canvas" width="240" height="240"></canvas>
-        </div>
-        <button id="spin-btn" class="btn btn-gold" onclick="spinRoulette()" disabled>
-          🎰 Spin &amp; Reveal
-        </button>
-      </div>
-      <div style="width:100%">
-        <div class="input-group" style="margin-bottom:8px">
-          <label>Session ID</label>
-          <input type="number" id="input-session-id" placeholder="e.g. 1001" min="1" max="999999" />
-        </div>
-      </div>
-    </div>
-
-    <div class="bcard">
-      <div class="bcard-title"><span class="icon">🧮</span> ZK Commit-Reveal</div>
-      <div class="title-line"></div>
-      <div class="zk-box">
-        <div class="zk-row"><span class="zk-lbl">Secret</span><span class="zk-val dim" id="zk-secret">hidden</span></div>
-        <div class="zk-row"><span class="zk-lbl">Salt</span><span class="zk-val dim" id="zk-salt">hidden</span></div>
-        <div class="zk-row"><span class="zk-lbl">Commitment</span><span class="zk-val dim" id="zk-commitment">—</span></div>
-        <div class="zk-row"><span class="zk-lbl">On-chain</span><span class="zk-val dim" id="zk-onchain">pending</span></div>
-        <div class="zk-row"><span class="zk-lbl">Entries</span><span class="zk-val dim" id="zk-participants">0</span></div>
-        <div class="zk-row"><span class="zk-lbl">winner_index</span><span class="zk-val dim" id="zk-winner">—</span></div>
-        <div class="zk-row"><span class="zk-lbl">Noir Proof</span><span class="zk-val dim" id="zk-proof-status">pending</span></div>
-      </div>
-      <div style="margin-top:10px">
-        <a id="noir-proof-link" href="#" style="display:none;font-size:.75rem;color:var(--pink)">View proof JSON →</a>
-      </div>
-    </div>
-
-    <div class="bcard">
-      <div class="bcard-title"><span class="icon">📡</span> Activity Log</div>
-      <div class="title-line"></div>
+    <!-- Activity log -->
+    <div class="fcard fcard-log" id="fcard-log">
+      <div class="fcard-title"><span style="margin-right:6px">📡</span>Activity</div>
       <div id="event-log">
-        <div class="log-entry info">System ready. Connect your Freighter wallet.</div>
+        <div class="log-entry info">System ready — connect your Freighter wallet to begin.</div>
       </div>
     </div>
 
-    <div class="bcard span-2" style="grid-column:1/3">
-      <div class="bcard-title"><span class="icon">🔬</span> How it works</div>
-      <div class="title-line"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="how-step"><div class="how-dot"></div><div style="color:var(--text-muted);line-height:1.6"><strong style="color:var(--cream)">1. Setup</strong> — The streamer configures the number of participants, prize, and winners before the draw begins.</div></div>
-        <div class="how-step"><div class="how-dot"></div><div style="color:var(--text-muted);line-height:1.6"><strong style="color:var(--cream)">2. Commit</strong> — A secret is hashed locally (<code>SHA-256(secret || salt)</code>) and committed on-chain via Soroban. The secret never leaves the browser.</div></div>
-        <div class="how-step"><div class="how-dot"></div><div style="color:var(--text-muted);line-height:1.6"><strong style="color:var(--cream)">3. Register</strong> — Participant wallets are added on-chain. Manipulation is impossible because the secret was already committed.</div></div>
-        <div class="how-step"><div class="how-dot"></div><div style="color:var(--text-muted);line-height:1.6"><strong style="color:var(--cream)">4. Reveal</strong> — The contract verifies <code>SHA-256(secret || salt) == commitment</code> and computes <code>winner = secret % participants</code>. A Noir circuit produces a formal proof for public auditing.</div></div>
+    <!-- ZK info row -->
+    <div class="fcard fcard-zk" id="fcard-zk">
+      <div class="fcard-title"><span style="margin-right:6px">🧮</span>ZK Proof</div>
+      <div class="zk-grid">
+        <div class="zk-item"><span class="zk-lbl">Commitment</span><span class="zk-val dim" id="zk-commitment">—</span></div>
+        <div class="zk-item"><span class="zk-lbl">On-chain</span><span class="zk-val dim" id="zk-onchain">pending</span></div>
+        <div class="zk-item"><span class="zk-lbl">Winner idx</span><span class="zk-val dim" id="zk-winner">—</span></div>
+        <div class="zk-item"><span class="zk-lbl">Noir proof</span><span class="zk-val dim" id="zk-proof-status">pending</span></div>
       </div>
+      <a id="noir-proof-link" href="#" style="display:none;font-size:.73rem;color:var(--pink);margin-top:8px;display:none">Download proof JSON →</a>
     </div>
 
+  </section><!-- /form-bento -->
+
+</div><!-- /app -->
 
 <script src="app.js"></script>
 </body>
