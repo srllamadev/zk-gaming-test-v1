@@ -1,0 +1,19 @@
+[package]
+name = "zk_roulette"
+type = "bin"
+authors = ["ZK Roulette Streamer - Stellar Hackathon"]
+compiler_version = ">=0.36.0"
+
+# ─────────────────────────────────────────────────────────────
+# Descripción del circuito:
+#   Implementa el esquema Commit-Reveal para sorteos verificables.
+#   El Prover demuestra que conoce (secret_number, salt) cuyo
+#   hash Poseidon coincide con public_commitment, sin revelar
+#   el secreto antes del reveal.
+#
+#   Compatible con Stellar Protocol 25 (Poseidon over BN254).
+# ─────────────────────────────────────────────────────────────
+
+[dependencies]
+# Sin dependencias externas: usamos la stdlib de Noir (std)
+# que ya incluye poseidon::bn254 y utilidades de hashing.

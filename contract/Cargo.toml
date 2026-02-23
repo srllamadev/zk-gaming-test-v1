@@ -1,0 +1,32 @@
+[package]
+name = "zk-roulette"
+version = "0.1.0"
+edition = "2021"
+description = "ZK Roulette for Streamers — Stellar Hackathon 2026"
+authors = ["ZK Roulette Team"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Soroban SDK compatible con Protocol 25 (X-Ray) / Stellar v22
+soroban-sdk = { version = "22.0.1", features = ["alloc"] }
+
+[dev-dependencies]
+soroban-sdk = { version = "22.0.1", features = ["testutils", "alloc"] }
+
+# ── Perfil de release: binario WASM mínimo ────────────────────────────────────
+[profile.release]
+opt-level     = "z"
+overflow-checks = true
+debug         = 0
+strip         = "symbols"
+debug-assertions = false
+panic         = "abort"
+codegen-units = 1
+lto           = true
+
+# ── Perfil para tests ─────────────────────────────────────────────────────────
+[profile.test]
+opt-level = 0
+debug     = true

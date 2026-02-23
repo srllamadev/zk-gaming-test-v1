@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZK Roulette — Stellar Hackathon 2026</title>
+
+  <!-- Stellar SDK (Soroban + RPC) -->
+  <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@13/dist/stellar-sdk.min.js"></script>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       ESTILOS — Tema espacial / cósmico
+       ══════════════════════════════════════════════════════════════════ -->
+  <style>
+    /* ── Variables ──────────────────────────────────────────────────────── */
+    :root {
+      --bg-deep:    #04040f;
+      --bg-card:    #0b0b20;
+      --bg-panel:   #0f0f2a;
+      --border:     #1e1e50;
+      --accent-1:   #7c3aed;   /* violeta nebulosa */
+      --accent-2:   #0ea5e9;   /* azul estrella    */
+      --accent-3:   #f59e0b;   /* dorado corona    */
+      --accent-4:   #10b981;   /* verde cometa     */
+      --text-main:  #e2e8f0;
+      --text-muted: #64748b;
+      --glow-1:     rgba(124, 58, 237, 0.35);
+      --glow-2:     rgba(14, 165, 233, 0.30);
+      --glow-3:     rgba(245, 158, 11, 0.40);
+      --font:       'Segoe UI', system-ui, -apple-system, sans-serif;
+      --font-mono:  'Fira Code', 'Courier New', monospace;
+      --radius:     12px;
+      --radius-lg:  20px;
+    }
+
+    /* ── Reset & Base ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-deep);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ── Fondo de estrellas ─────────────────────────────────────────────── */
+    #stars-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Nebulosas de fondo (purely CSS) */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: -10%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(ellipse, rgba(124,58,237,.10) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -10%;
+      width: 55%;
+      height: 55%;
+      background: radial-gradient(ellipse, rgba(14,165,233,.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Layout Principal ───────────────────────────────────────────────── */
+    #app {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 64px;
+    }
+
+    /* ── Cabecera ───────────────────────────────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0 32px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      box-shadow: 0 0 24px var(--glow-1);
+      flex-shrink: 0;
+    }
+
+    .logo-text h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #a78bfa, #38bdf8, #fbbf24);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+    .logo-text p {
+      font-size: .78rem;
+      color: var(--text-muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Botón de wallet ────────────────────────────────────────────────── */
+    #wallet-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      color: var(--text-main);
+      cursor: pointer;
+      font-size: .9rem;
+      font-family: var(--font);
+      transition: all .25s;
+    }
+    #wallet-btn:hover {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 16px var(--glow-2);
+    }
+    #wallet-btn.connected {
+      border-color: var(--accent-4);
+      box-shadow: 0 0 12px rgba(16,185,129,.25);
+    }
+    .wallet-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      transition: background .3s;
+    }
+    .wallet-dot.on { background: var(--accent-4); box-shadow: 0 0 6px var(--accent-4); }
+
+    /* ── Indicador de Fase ──────────────────────────────────────────────── */
+    .phase-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 32px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 6px;
+      overflow: auto;
+    }
+    .phase-step {
+      flex: 1;
+      text-align: center;
+      padding: 8px 12px;
+      border-radius: 50px;
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      transition: all .3s;
+      white-space: nowrap;
+    }
+    .phase-step.active {
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      color: #fff;
+      box-shadow: 0 0 16px var(--glow-1);
+    }
+    .phase-step.done {
+      color: var(--accent-4);
+    }
+
+    /* ── Cuadrícula central ─────────────────────────────────────────────── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 820px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Tarjeta genérica ───────────────────────────────────────────────── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon { font-size: 1.1rem; }
+
+    /* ── Ruleta ─────────────────────────────────────────────────────────── */
+    .roulette-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .roulette-outer {
+      position: relative;
+      width: 300px;
+      height: 300px;
+    }
+
+    /* Halo pulsante */
+    .roulette-outer::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--accent-1), var(--accent-2), var(--accent-3),
+        var(--accent-1), var(--accent-2)
+      );
+      animation: spin-glow 4s linear infinite;
+      opacity: .6;
+      filter: blur(10px);
+    }
+    .roulette-outer::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--accent-1), var(--accent-2), var(--accent-3), var(--accent-1)
+      );
+      animation: spin-glow 4s linear infinite;
+    }
+
+    #roulette-canvas {
+      position: relative;
+      z-index: 2;
+      border-radius: 50%;
+      display: block;
+    }
+
+    /* Aguja de la ruleta */
+    .roulette-pointer {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      font-size: 28px;
+      filter: drop-shadow(0 0 8px var(--accent-3));
+      animation: pointer-bounce 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes pointer-bounce {
+      from { transform: translateX(-50%) translateY(0); }
+      to   { transform: translateX(-50%) translateY(-4px); }
+    }
+    @keyframes spin-glow {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    /* ── Botones ────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 50px;
+      font-family: var(--font);
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      color: #fff;
+      box-shadow: 0 4px 20px var(--glow-1);
+      width: 100%;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px var(--glow-1);
+    }
+    .btn-secondary {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      width: 100%;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 12px var(--glow-2);
+    }
+    .btn-gold {
+      background: linear-gradient(135deg, #d97706, #f59e0b);
+      color: #000;
+      width: 100%;
+      font-size: 1rem;
+      padding: 16px;
+      box-shadow: 0 4px 24px var(--glow-3);
+    }
+    .btn-gold:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px var(--glow-3);
+    }
+
+    /* ── Inputs ─────────────────────────────────────────────────────────── */
+    .input-group { margin-bottom: 16px; }
+    label {
+      display: block;
+      font-size: .8rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: .88rem;
+      outline: none;
+      transition: border .2s;
+    }
+    input:focus {
+      border-color: var(--accent-2);
+      box-shadow: 0 0 0 3px rgba(14,165,233,.12);
+    }
+
+    /* ── Participantes ──────────────────────────────────────────────────── */
+    #participants-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+
+    .participant-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .82rem;
+      font-family: var(--font-mono);
+      transition: all .2s;
+      animation: slide-in .3s ease;
+    }
+    .participant-card.winner {
+      border-color: var(--accent-3);
+      background: rgba(245,158,11,.08);
+      box-shadow: 0 0 20px var(--glow-3);
+    }
+    .participant-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      display: grid;
+      place-items: center;
+      font-size: .8rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .participant-addr {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-muted);
+    }
+    .participant-badge {
+      font-size: .7rem;
+      padding: 2px 8px;
+      border-radius: 50px;
+      background: var(--glow-3);
+      color: var(--accent-3);
+      font-weight: 700;
+    }
+
+    @keyframes slide-in {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Panel lateral derecho ──────────────────────────────────────────── */
+    .side-panel { display: flex; flex-direction: column; gap: 20px; }
+
+    /* ── ZK Proof estado ────────────────────────────────────────────────── */
+    .zk-status-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .zk-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .83rem;
+    }
+    .zk-row:last-child { border-bottom: none; }
+    .zk-label { color: var(--text-muted); width: 110px; flex-shrink: 0; }
+    .zk-value { font-family: var(--font-mono); color: var(--accent-2); word-break: break-all; font-size: .78rem; }
+    .zk-value.ok { color: var(--accent-4); }
+    .zk-value.warn { color: var(--accent-3); }
+    .zk-value.pending { color: var(--text-muted); font-style: italic; }
+
+    /* ── Log de eventos ─────────────────────────────────────────────────── */
+    #event-log {
+      max-height: 160px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .log-entry {
+      font-family: var(--font-mono);
+      font-size: .76rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      border-left: 3px solid var(--border);
+      line-height: 1.4;
+      animation: slide-in .2s ease;
+    }
+    .log-entry.info  { border-color: var(--accent-2); color: #93c5fd; }
+    .log-entry.ok    { border-color: var(--accent-4); color: #6ee7b7; }
+    .log-entry.warn  { border-color: var(--accent-3); color: #fcd34d; }
+    .log-entry.error { border-color: #ef4444; color: #fca5a5; }
+
+    /* ── Ganador overlay ────────────────────────────────────────────────── */
+    #winner-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(4,4,15,.92);
+      backdrop-filter: blur(12px);
+      align-items: center;
+      justify-content: center;
+    }
+    #winner-overlay.show { display: flex; }
+
+    .winner-card {
+      background: var(--bg-card);
+      border: 2px solid var(--accent-3);
+      border-radius: 28px;
+      padding: 48px 40px;
+      text-align: center;
+      max-width: 480px;
+      width: 90%;
+      box-shadow: 0 0 80px var(--glow-3), 0 0 200px rgba(245,158,11,.15);
+      animation: winner-pop .5s cubic-bezier(.175,.885,.32,1.275);
+    }
+    @keyframes winner-pop {
+      from { transform: scale(.7); opacity: 0; }
+      to   { transform: scale(1);  opacity: 1; }
+    }
+    .winner-trophy { font-size: 4rem; margin-bottom: 16px; }
+    .winner-title {
+      font-size: 1.8rem;
+      font-weight: 900;
+      background: linear-gradient(90deg, #fbbf24, #f59e0b, #d97706);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .winner-subtitle { color: var(--text-muted); margin-bottom: 24px; }
+    .winner-address {
+      font-family: var(--font-mono);
+      font-size: .82rem;
+      color: var(--accent-2);
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      word-break: break-all;
+      margin-bottom: 24px;
+    }
+    .winner-index-badge {
+      display: inline-block;
+      background: var(--glow-3);
+      color: var(--accent-3);
+      font-weight: 700;
+      padding: 4px 14px;
+      border-radius: 50px;
+      font-size: .85rem;
+      margin-bottom: 28px;
+    }
+
+    /* ── Spinner ────────────────────────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Miscellaneous ──────────────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+    .text-muted { color: var(--text-muted); font-size: .82rem; }
+
+    .network-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .72rem;
+      color: var(--text-muted);
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 4px 12px;
+    }
+    .network-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent-4);
+      box-shadow: 0 0 4px var(--accent-4);
+    }
+
+    /* ── Stats strip ────────────────────────────────────────────────────── */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 12px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { font-size: .72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .07em; }
+  </style>
+</head>
+<body>
+
+<!-- Canvas de estrellas animadas -->
+<canvas id="stars-canvas"></canvas>
+
+<!-- Overlay ganador -->
+<div id="winner-overlay">
+  <div class="winner-card">
+    <div class="winner-trophy">🏆</div>
+    <div class="winner-title">¡Ganador Revelado!</div>
+    <div class="winner-subtitle">Sorteo verificado con ZK Proof · Stellar Protocol 25</div>
+    <div id="winner-address-display" class="winner-address">—</div>
+    <div id="winner-index-display" class="winner-index-badge">Índice #—</div>
+    <button class="btn btn-secondary" style="width:100%" onclick="closeWinnerOverlay()">
+      Cerrar
+    </button>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- ── Cabecera ───────────────────────────────────────────────────── -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🎰</div>
+      <div class="logo-text">
+        <h1>ZK Roulette</h1>
+        <p>Provable Randomness · Stellar Hackathon 2026</p>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="network-badge">
+        <div class="network-dot"></div>
+        Testnet
+      </div>
+      <button id="wallet-btn" onclick="connectWallet()">
+        <div class="wallet-dot" id="wallet-dot"></div>
+        <span id="wallet-label">Conectar Freighter</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Barra de fases ─────────────────────────────────────────────── -->
+  <div class="phase-bar">
+    <div class="phase-step active" id="phase-0">① Commit</div>
+    <div class="phase-step" id="phase-1">② Registro</div>
+    <div class="phase-step" id="phase-2">③ Cerrar</div>
+    <div class="phase-step" id="phase-3">④ Revelar</div>
+    <div class="phase-step" id="phase-4">⑤ Ganador</div>
+  </div>
+
+  <!-- ── Stats ─────────────────────────────────────────────────────── -->
+  <div class="stats-strip">
+    <div class="stat-box">
+      <div class="stat-value" id="stat-participants">0</div>
+      <div class="stat-label">Participantes</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="stat-session">—</div>
+      <div class="stat-label">Session ID</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="stat-phase">IDLE</div>
+      <div class="stat-label">Fase</div>
+    </div>
+  </div>
+
+  <!-- ── Grid principal ────────────────────────────────────────────── -->
+  <div class="main-grid">
+
+    <!-- Columna izquierda: Ruleta + Acciones -->
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Ruleta animada -->
+      <div class="card">
+        <div class="roulette-wrap">
+          <div class="roulette-outer">
+            <div class="roulette-pointer">▼</div>
+            <canvas id="roulette-canvas" width="300" height="300"></canvas>
+          </div>
+          <button id="spin-btn" class="btn btn-gold" onclick="spinRoulette()" disabled>
+            🎰 Girar Ruleta
+          </button>
+        </div>
+      </div>
+
+      <!-- Panel de acciones por fase -->
+      <div class="card" id="action-panel">
+
+        <!-- Fase 0: Commit -->
+        <div id="panel-commit">
+          <div class="card-title"><span class="icon">🔒</span> Fase Commit — Registrar Sorteo</div>
+          <p class="text-muted" style="margin-bottom:16px">
+            Genera un número secreto local y publica el hash on-chain antes de conocer los participantes.
+            Esto garantiza que el sorteo no puede manipularse.
+          </p>
+          <div class="input-group">
+            <label>Session ID (número único para este sorteo)</label>
+            <input type="number" id="input-session-id" placeholder="Ej: 1001" min="1" max="999999" />
+          </div>
+          <button class="btn btn-primary" onclick="doCommit()">
+            <span id="btn-commit-spinner"></span>
+            🔒 Publicar Commitment
+          </button>
+        </div>
+
+        <!-- Fase 1: Registro -->
+        <div id="panel-register" style="display:none">
+          <div class="card-title"><span class="icon">👥</span> Fase Registro — Participantes</div>
+          <p class="text-muted" style="margin-bottom:16px">
+            Los espectadores se registran en el sorteo. El streamer cierra inscripciones cuando
+            todos estén listos.
+          </p>
+          <div class="input-group">
+            <label>Dirección del participante (G...)</label>
+            <input type="text" id="input-participant" placeholder="GABC...XYZ" style="margin-bottom:8px" />
+          </div>
+          <button class="btn btn-secondary" style="margin-bottom:12px" onclick="doRegister()">
+            <span id="btn-register-spinner"></span>
+            ➕ Registrar Participante
+          </button>
+          <div class="divider"></div>
+          <button class="btn btn-primary" onclick="doCloseRegistrations()">
+            <span id="btn-close-spinner"></span>
+            🔐 Cerrar Inscripciones
+          </button>
+        </div>
+
+        <!-- Fase 2: Reveal -->
+        <div id="panel-reveal" style="display:none">
+          <div class="card-title"><span class="icon">⚡</span> Fase Reveal — Revelar Ganador</div>
+          <p class="text-muted" style="margin-bottom:16px">
+            La ruleta girará mientras se verifica el proof. El contrato verificará que
+            <code>SHA256(secreto || salt) == commitment</code> on-chain y calculará el ganador.
+          </p>
+          <button class="btn btn-gold" onclick="doReveal()">
+            <span id="btn-reveal-spinner"></span>
+            🎰 Revelar Ganador con ZK Proof
+          </button>
+        </div>
+
+      </div><!-- /action-panel -->
+
+      <!-- Lista de participantes -->
+      <div class="card">
+        <div class="card-title"><span class="icon">👥</span> Participantes <span id="participants-count-badge" style="margin-left:auto;font-size:.8rem;color:var(--text-muted)">0</span></div>
+        <div id="participants-grid">
+          <p class="text-muted" style="text-align:center;padding:16px 0">
+            No hay participantes aún.
+          </p>
+        </div>
+      </div>
+
+    </div><!-- /left column -->
+
+    <!-- Columna derecha: ZK Info + Log -->
+    <div class="side-panel">
+
+      <!-- Info ZK Proof -->
+      <div class="card">
+        <div class="card-title"><span class="icon">🧮</span> Datos ZK Commit-Reveal</div>
+        <div class="zk-status-box">
+          <div class="zk-row">
+            <span class="zk-label">Secreto</span>
+            <span class="zk-value pending" id="zk-secret">oculto</span>
+          </div>
+          <div class="zk-row">
+            <span class="zk-label">Salt</span>
+            <span class="zk-value pending" id="zk-salt">oculto</span>
+          </div>
+          <div class="zk-row">
+            <span class="zk-label">Commitment</span>
+            <span class="zk-value pending" id="zk-commitment">—</span>
+          </div>
+          <div class="zk-row">
+            <span class="zk-label">On-chain</span>
+            <span class="zk-value pending" id="zk-onchain">pendiente</span>
+          </div>
+          <div class="zk-row">
+            <span class="zk-label">Participantes</span>
+            <span class="zk-value pending" id="zk-participants">0</span>
+          </div>
+          <div class="zk-row">
+            <span class="zk-label">winner_index</span>
+            <span class="zk-value pending" id="zk-winner">—</span>
+          </div>
+          <div class="zk-row">
+            <span class="zk-label">Noir Proof</span>
+            <span class="zk-value pending" id="zk-proof-status">pendiente</span>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <a id="noir-proof-link" href="#" style="display:none;font-size:.78rem;color:var(--accent-2)">
+            Ver proof completo (JSON) →
+          </a>
+        </div>
+      </div>
+
+      <!-- Cómo funciona -->
+      <div class="card">
+        <div class="card-title"><span class="icon">🔬</span> ¿Cómo funciona?</div>
+        <div style="font-size:.82rem;line-height:1.6;color:var(--text-muted)">
+          <p style="margin-bottom:8px">
+            <strong style="color:var(--accent-2)">1. Commit:</strong>
+            El streamer genera un número secreto y calcula
+            <code>SHA-256(secreto || salt)</code> localmente.
+            Sube ese hash al contrato Soroban. El secreto nunca sale del browser.
+          </p>
+          <p style="margin-bottom:8px">
+            <strong style="color:var(--accent-2)">2. Registro:</strong>
+            Los participantes se inscriben on-chain. El streamer no puede elegir
+            el ganador porque ya comprometió el secreto antes.
+          </p>
+          <p style="margin-bottom:8px">
+            <strong style="color:var(--accent-2)">3. Reveal:</strong>
+            El contrato verifica que <code>SHA-256(secreto || salt) == commitment</code>
+            y calcula <code>winner = secreto % participantes</code>.
+            Un circuito Noir genera la prueba formal para auditoría pública.
+          </p>
+          <p>
+            <strong style="color:var(--accent-3)">Garantía:</strong>
+            Nadie, ni el streamer, puede manipular el resultado.
+          </p>
+        </div>
+      </div>
+
+      <!-- Log de eventos -->
+      <div class="card">
+        <div class="card-title"><span class="icon">📡</span> Log de Actividad</div>
+        <div id="event-log">
+          <div class="log-entry info">Sistema inicializado. Conecta tu wallet Freighter.</div>
+        </div>
+      </div>
+
+    </div><!-- /right column -->
+  </div><!-- /main-grid -->
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+     ══════════════════════════════════════════════════════════════════ -->
+<script type="module">
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONFIGURACIÓN — Actualiza CONTRACT_ID tras ejecutar scripts/deploy.sh
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CONFIG = {
+  CONTRACT_ID: "REEMPLAZA_CON_TU_CONTRACT_ID",          // ← después del deploy
+  GAME_HUB:    "CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG",
+  NETWORK:     "TESTNET",
+  NETWORK_PASSPHRASE: "Test SDF Network ; September 2015",
+  SOROBAN_RPC: "https://soroban-testnet.stellar.org",
+  HORIZON_URL: "https://horizon-testnet.stellar.org",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ESTADO GLOBAL
+// ─────────────────────────────────────────────────────────────────────────────
+const state = {
+  phase:         "IDLE",  // IDLE | COMMITTED | OPEN | CLOSED | REVEALED
+  publicKey:     null,
+  sessionId:     null,
+  secretNumber:  null,   // BigInt
+  salt:          null,   // Uint8Array(32)
+  commitment:    null,   // Uint8Array(32)
+  participants:  [],
+  winnerIndex:   null,
+  winnerAddress: null,
+  noirProof:     null,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ESTRELLAS ANIMADAS (canvas background)
+// ─────────────────────────────────────────────────────────────────────────────
+(function initStars() {
+  const canvas = document.getElementById("stars-canvas");
+  const ctx = canvas.getContext("2d");
+  let W, H, stars = [];
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  function makeStars(n) {
+    stars = Array.from({ length: n }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.4 + 0.2,
+      a: Math.random(),
+      da: (Math.random() * 0.004 + 0.001) * (Math.random() < .5 ? 1 : -1),
+    }));
+  }
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    for (const s of stars) {
+      s.a += s.da;
+      if (s.a > 1 || s.a < 0) s.da *= -1;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,210,255,${s.a.toFixed(2)})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener("resize", () => { resize(); makeStars(220); });
+  resize();
+  makeStars(220);
+  draw();
+}());
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  RULETA (canvas)
+// ─────────────────────────────────────────────────────────────────────────────
+const rouletteCanvas = document.getElementById("roulette-canvas");
+const rouletteCtx    = rouletteCanvas.getContext("2d");
+let   rouletteAngle  = 0;
+let   rouletteSpinning = false;
+let   roulettePrevTimestamp = null;
+
+const SEGMENT_COLORS = [
+  "#7c3aed","#0ea5e9","#f59e0b","#10b981",
+  "#ec4899","#3b82f6","#f97316","#8b5cf6",
+  "#06b6d4","#84cc16","#a855f7","#14b8a6",
+];
+
+function drawRoulette(participants, highlightIndex = -1) {
+  const cx = 150, cy = 150, r = 145;
+  const n = Math.max(participants.length, 1);
+  rouletteCtx.clearRect(0, 0, 300, 300);
+
+  // Fondo circular
+  rouletteCtx.save();
+  rouletteCtx.translate(cx, cy);
+  rouletteCtx.rotate(rouletteAngle);
+
+  const step = (Math.PI * 2) / n;
+  for (let i = 0; i < n; i++) {
+    const start = step * i - Math.PI / 2;
+    const end   = start + step;
+
+    rouletteCtx.beginPath();
+    rouletteCtx.moveTo(0, 0);
+    rouletteCtx.arc(0, 0, r, start, end);
+    rouletteCtx.closePath();
+
+    const color = SEGMENT_COLORS[i % SEGMENT_COLORS.length];
+    rouletteCtx.fillStyle = (i === highlightIndex)
+      ? "#fbbf24"
+      : color + (n === 1 ? "" : "cc");
+    rouletteCtx.fill();
+    rouletteCtx.strokeStyle = "rgba(255,255,255,.08)";
+    rouletteCtx.lineWidth = 1.5;
+    rouletteCtx.stroke();
+
+    // Número del segmento
+    if (n > 1) {
+      const mid = start + step / 2;
+      const tx  = Math.cos(mid) * (r * .62);
+      const ty  = Math.sin(mid) * (r * .62);
+      rouletteCtx.fillStyle = "rgba(255,255,255,.9)";
+      rouletteCtx.font = `bold ${n > 12 ? 10 : 13}px sans-serif`;
+      rouletteCtx.textAlign = "center";
+      rouletteCtx.textBaseline = "middle";
+      rouletteCtx.fillText(i + 1, tx, ty);
+    }
+  }
+
+  // Centro
+  rouletteCtx.beginPath();
+  rouletteCtx.arc(0, 0, 22, 0, Math.PI * 2);
+  const grd = rouletteCtx.createRadialGradient(0, 0, 4, 0, 0, 22);
+  grd.addColorStop(0, "#fff");
+  grd.addColorStop(1, "#a78bfa");
+  rouletteCtx.fillStyle = grd;
+  rouletteCtx.fill();
+
+  rouletteCtx.restore();
+}
+
+drawRoulette([]);
+
+function animateSpin(targetAngle, duration, onDone) {
+  rouletteSpinning = true;
+  const startAngle = rouletteAngle;
+  const start = performance.now();
+  function frame(now) {
+    const t = Math.min((now - start) / duration, 1);
+    // Easing: ease-out quint
+    const ease = 1 - Math.pow(1 - t, 5);
+    rouletteAngle = startAngle + (targetAngle - startAngle) * ease;
+    drawRoulette(state.participants);
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      rouletteSpinning = false;
+      onDone && onDone();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  LOG DE ACTIVIDAD
+// ─────────────────────────────────────────────────────────────────────────────
+function log(msg, type = "info") {
+  const el  = document.getElementById("event-log");
+  const div = document.createElement("div");
+  div.className = `log-entry ${type}`;
+  const ts = new Date().toLocaleTimeString("es", { hour12: false });
+  div.textContent = `[${ts}] ${msg}`;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ACTUALIZAR UI
+// ─────────────────────────────────────────────────────────────────────────────
+function updatePhaseUI() {
+  const phases = ["IDLE","COMMITTED","OPEN","CLOSED","REVEALED"];
+  const phaseLabels = {
+    IDLE:      "COMMIT",
+    COMMITTED: "ABIERTO",
+    OPEN:      "ABIERTO",
+    CLOSED:    "CERRADO",
+    REVEALED:  "GANADOR",
+  };
+  const idx = { IDLE:0, COMMITTED:1, OPEN:1, CLOSED:2, REVEALED:4 }[state.phase] ?? 0;
+
+  for (let i = 0; i < 5; i++) {
+    const el = document.getElementById(`phase-${i}`);
+    el.className = "phase-step" + (i === idx ? " active" : i < idx ? " done" : "");
+  }
+
+  document.getElementById("stat-phase").textContent = phaseLabels[state.phase] ?? state.phase;
+  document.getElementById("stat-session").textContent = state.sessionId ?? "—";
+  document.getElementById("stat-participants").textContent = state.participants.length;
+  document.getElementById("participants-count-badge").textContent = state.participants.length;
+
+  // Mostrar panel de acción correcto
+  document.getElementById("panel-commit").style.display   = (state.phase === "IDLE") ? "" : "none";
+  document.getElementById("panel-register").style.display = ["COMMITTED","OPEN"].includes(state.phase) ? "" : "none";
+  document.getElementById("panel-reveal").style.display   = (state.phase === "CLOSED") ? "" : "none";
+
+  // Botón girar
+  document.getElementById("spin-btn").disabled = (state.phase !== "CLOSED");
+
+  // Lista de participantes
+  renderParticipants();
+}
+
+function renderParticipants(winnerIdx = -1) {
+  const grid = document.getElementById("participants-grid");
+  if (state.participants.length === 0) {
+    grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:16px 0">No hay participantes aún.</p>';
+    return;
+  }
+  grid.innerHTML = state.participants.map((addr, i) => `
+    <div class="participant-card ${i === winnerIdx ? "winner" : ""}">
+      <div class="participant-avatar">${i + 1}</div>
+      <div class="participant-addr">${addr}</div>
+      ${i === winnerIdx ? '<div class="participant-badge">🏆 GANADOR</div>' : ""}
+    </div>
+  `).join("");
+}
+
+function setZkField(id, value, type = "") {
+  const el = document.getElementById(id);
+  el.textContent = value;
+  el.className   = `zk-value ${type || ""}`.trim();
+}
+
+function shortHex(bytes) {
+  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("");
+  return hex.slice(0, 8) + "…" + hex.slice(-8);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  FREIGHTER WALLET
+// ─────────────────────────────────────────────────────────────────────────────
+// Freighter inyecta window.freighterApi globalmente cuando la extensión está
+// instalada. Fallback: pide al usuario que instale la extensión.
+
+function getFreighter() {
+  if (window.freighterApi) return window.freighterApi;
+  throw new Error("Freighter no encontrado. Instala la extensión en: https://freighter.app");
+}
+
+window.connectWallet = async function () {
+  try {
+    const freighter = getFreighter();
+    const { publicKey } = await freighter.requestAccess();
+    if (!publicKey) throw new Error("Acceso denegado por el usuario");
+
+    state.publicKey = publicKey;
+    const short = `${publicKey.slice(0, 6)}…${publicKey.slice(-4)}`;
+
+    document.getElementById("wallet-dot").classList.add("on");
+    document.getElementById("wallet-label").textContent = short;
+    document.getElementById("wallet-btn").classList.add("connected");
+    log(`Wallet conectada: ${publicKey}`, "ok");
+  } catch (err) {
+    log(`Error al conectar wallet: ${err.message}`, "error");
+    alert("Error: " + err.message);
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CRIPTOGRAFÍA LOCAL (Web Crypto API)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Genera N bytes criptográficamente seguros */
+function randomBytes(n) {
+  return crypto.getRandomValues(new Uint8Array(n));
+}
+
+/**
+ * Calcula SHA-256(secret_number_be8 || salt_32) — idéntico a lib.rs
+ * @param {BigInt} secretNumber  u64 big-endian
+ * @param {Uint8Array} salt      32 bytes
+ * @returns {Promise<Uint8Array>} 32 bytes
+ */
+async function computeCommitment(secretNumber, salt) {
+  const preimage = new Uint8Array(40);
+  const view = new DataView(preimage.buffer);
+  view.setBigUint64(0, BigInt(secretNumber), false); // big-endian, sin signo
+  preimage.set(salt, 8);
+  const hash = await crypto.subtle.digest("SHA-256", preimage);
+  return new Uint8Array(hash);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  SOROBAN RPC — Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getSdk() {
+  if (!window.StellarSdk) throw new Error("stellar-sdk no cargado");
+  return window.StellarSdk;
+}
+
+function getRpcServer() {
+  const Sdk = getSdk();
+  return new Sdk.SorobanRpc.Server(CONFIG.SOROBAN_RPC, { allowHttp: false });
+}
+
+/**
+ * Construye, simula, firma y envía una transacción de contrato.
+ * @param {string}   method    Nombre del método del contrato
+ * @param {Array}    args      ScVals
+ * @returns {Promise<any>}     Resultado del polling
+ */
+async function invokeContract(method, args = []) {
+  if (!state.publicKey) throw new Error("Wallet no conectada");
+  const Sdk    = getSdk();
+  const server = getRpcServer();
+  const freighter = getFreighter();
+
+  // 1. Cargar cuenta
+  const account = await server.getAccount(state.publicKey);
+
+  // 2. Construir transacción
+  const contract = new Sdk.Contract(CONFIG.CONTRACT_ID);
+  const tx = new Sdk.TransactionBuilder(account, {
+    fee: "200000",
+    networkPassphrase: CONFIG.NETWORK_PASSPHRASE,
+  })
+    .addOperation(contract.call(method, ...args))
+    .setTimeout(30)
+    .build();
+
+  // 3. Simular (obtener footprint y fee correcto)
+  const simResult = await server.simulateTransaction(tx);
+  if (Sdk.SorobanRpc.Api.isSimulationError(simResult)) {
+    throw new Error(`Simulación fallida: ${simResult.error}`);
+  }
+  const preparedTx = Sdk.SorobanRpc.assembleTransaction(tx, simResult).build();
+
+  // 4. Firmar con Freighter
+  const signedXdr = await freighter.signTransaction(preparedTx.toXDR(), {
+    networkPassphrase: CONFIG.NETWORK_PASSPHRASE,
+  });
+  const signedTx = Sdk.TransactionBuilder.fromXDR(signedXdr, CONFIG.NETWORK_PASSPHRASE);
+
+  // 5. Enviar
+  const sendResult = await server.sendTransaction(signedTx);
+  if (sendResult.status === "ERROR") {
+    throw new Error(`Envío fallido: ${JSON.stringify(sendResult.errorResult)}`);
+  }
+
+  // 6. Polling hasta confirmación
+  let getResult;
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    getResult = await server.getTransaction(sendResult.hash);
+    if (getResult.status === "SUCCESS") return getResult;
+    if (getResult.status === "FAILED")  throw new Error("Transacción fallida on-chain");
+  }
+  throw new Error("Timeout esperando confirmación");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  HELPERS DE ENCODING ScVal
+// ─────────────────────────────────────────────────────────────────────────────
+
+function scAddress(addr) {
+  const Sdk = getSdk();
+  return new Sdk.Address(addr).toScVal();
+}
+
+function scU32(n) {
+  const Sdk = getSdk();
+  return Sdk.xdr.ScVal.scvU32(n >>> 0);
+}
+
+function scU64(n) {
+  const Sdk = getSdk();
+  const big = BigInt(n);
+  const hi  = Number(big >> 32n) >>> 0;
+  const lo  = Number(big & 0xFFFFFFFFn) >>> 0;
+  return Sdk.xdr.ScVal.scvU64(new Sdk.xdr.Uint64(lo, hi));
+}
+
+function scBytesN32(bytes32) {
+  const Sdk = getSdk();
+  return Sdk.xdr.ScVal.scvBytes(Buffer.from(bytes32));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  SPINNER helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function showSpinner(id) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = '<span class="spinner"></span>&nbsp;';
+}
+function hideSpinner(id) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = "";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ACCIÓN 1 — COMMIT
+// ─────────────────────────────────────────────────────────────────────────────
+window.doCommit = async function () {
+  if (!state.publicKey) { alert("Conecta tu wallet primero"); return; }
+
+  const sessionIdInput = document.getElementById("input-session-id").value.trim();
+  if (!sessionIdInput || isNaN(sessionIdInput)) {
+    alert("Ingresa un Session ID numérico válido"); return;
+  }
+  const sessionId = parseInt(sessionIdInput, 10);
+
+  try {
+    showSpinner("btn-commit-spinner");
+    log("Generando número secreto y salt localmente...", "info");
+
+    // Generar secreto aleatorio (u64) — mínimo 1
+    const secretBytes = randomBytes(8);
+    const secretView  = new DataView(secretBytes.buffer);
+    let secretNumber  = secretView.getBigUint64(0, false);
+    if (secretNumber === 0n) secretNumber = 1n;
+
+    // Generar salt aleatorio (32 bytes)
+    const salt = randomBytes(32);
+
+    // Calcular commitment
+    const commitment = await computeCommitment(secretNumber, salt);
+
+    // Guardar en estado (NO se envía off-chain hasta el reveal)
+    state.secretNumber = secretNumber;
+    state.salt         = salt;
+    state.commitment   = commitment;
+    state.sessionId    = sessionId;
+
+    // Mostrar en UI (parcialmente)
+    setZkField("zk-secret", "****" + secretNumber.toString().slice(-4) + " (oculto)", "warn");
+    setZkField("zk-salt",   shortHex(salt) + " (local)", "warn");
+    setZkField("zk-commitment", shortHex(commitment), "ok");
+
+    log(`Commitment calculado: ${shortHex(commitment)}`, "ok");
+    log("Enviando commitment al contrato Soroban...", "info");
+
+    // Llamar commit_draw(streamer, session_id, commitment)
+    await invokeContract("commit_draw", [
+      scAddress(state.publicKey),
+      scU32(sessionId),
+      scBytesN32(commitment),
+    ]);
+
+    setZkField("zk-onchain", "✓ confirmado en Testnet", "ok");
+    log(`commit_draw(${sessionId}) confirmado on-chain ✓`, "ok");
+
+    // Guardar secreto en localStorage cifrado (para reload del browser)
+    const stored = {
+      sessionId,
+      secretNumber: secretNumber.toString(),
+      salt: Array.from(salt),
+      commitment: Array.from(commitment),
+    };
+    localStorage.setItem(`zk_roulette_${sessionId}`, JSON.stringify(stored));
+
+    state.phase = "OPEN";
+    updatePhaseUI();
+
+  } catch (err) {
+    log(`Error en commit: ${err.message}`, "error");
+    console.error(err);
+    alert("Error: " + err.message);
+  } finally {
+    hideSpinner("btn-commit-spinner");
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ACCIÓN 2 — REGISTRAR PARTICIPANTE
+// ─────────────────────────────────────────────────────────────────────────────
+window.doRegister = async function () {
+  if (!state.publicKey) { alert("Conecta tu wallet"); return; }
+  const addr = document.getElementById("input-participant").value.trim();
+  if (!addr || !addr.startsWith("G") || addr.length < 56) {
+    alert("Ingresa una dirección Stellar válida (G...)"); return;
+  }
+  if (state.participants.includes(addr)) {
+    alert("Ese participante ya está registrado"); return;
+  }
+
+  try {
+    showSpinner("btn-register-spinner");
+    log(`Registrando ${addr.slice(0,8)}...`, "info");
+
+    await invokeContract("register_participant", [
+      scU32(state.sessionId),
+      scAddress(addr),
+    ]);
+
+    state.participants.push(addr);
+    document.getElementById("input-participant").value = "";
+    setZkField("zk-participants", state.participants.length.toString(), "ok");
+    drawRoulette(state.participants);
+    updatePhaseUI();
+    log(`Participante registrado: ${addr.slice(0,12)}... ✓`, "ok");
+
+  } catch (err) {
+    log(`Error al registrar: ${err.message}`, "error");
+    alert("Error: " + err.message);
+  } finally {
+    hideSpinner("btn-register-spinner");
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ACCIÓN 3 — CERRAR INSCRIPCIONES
+// ─────────────────────────────────────────────────────────────────────────────
+window.doCloseRegistrations = async function () {
+  if (state.participants.length < 2) {
+    alert("Necesitas al menos 2 participantes"); return;
+  }
+  try {
+    showSpinner("btn-close-spinner");
+    log("Cerrando inscripciones...", "info");
+
+    await invokeContract("close_registrations", [scU32(state.sessionId)]);
+
+    state.phase = "CLOSED";
+    updatePhaseUI();
+    log("Inscripciones cerradas. Lista de participantes congelada on-chain ✓", "ok");
+    log("El ganador se calculará con: secreto % " + state.participants.length, "info");
+
+  } catch (err) {
+    log(`Error al cerrar: ${err.message}`, "error");
+    alert("Error: " + err.message);
+  } finally {
+    hideSpinner("btn-close-spinner");
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  BOTÓN GIRAR (solo animación — el reveal real está en doReveal)
+// ─────────────────────────────────────────────────────────────────────────────
+window.spinRoulette = function () {
+  if (rouletteSpinning) return;
+  doReveal();
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ACCIÓN 4 — REVEAL WINNER
+// ─────────────────────────────────────────────────────────────────────────────
+window.doReveal = async function () {
+  if (!state.secretNumber || !state.salt) {
+    // Intentar recuperar de localStorage
+    const stored = localStorage.getItem(`zk_roulette_${state.sessionId}`);
+    if (stored) {
+      const d = JSON.parse(stored);
+      state.secretNumber = BigInt(d.secretNumber);
+      state.salt = new Uint8Array(d.salt);
+      state.commitment = new Uint8Array(d.commitment);
+      log("Secreto recuperado de almacenamiento local", "warn");
+    } else {
+      alert("No se encontró el secreto local. ¿Recargaste la página sin guardar?");
+      return;
+    }
+  }
+
+  const n = state.participants.length;
+  if (n < 2) { alert("No hay suficientes participantes"); return; }
+
+  try {
+    showSpinner("btn-reveal-spinner");
+    document.getElementById("spin-btn").disabled = true;
+
+    // ── Paso 1: Generar Noir proof (simulado / off-chain) ─────────────────
+    log("Generando ZK proof con circuito Noir...", "info");
+    setZkField("zk-proof-status", "generando…", "warn");
+    drawRoulette(state.participants);
+
+    // Calcular winner_index localmente (mismo cálculo que el circuito Noir)
+    const winnerIndex = Number(state.secretNumber % BigInt(n));
+
+    // Simular generación de proof con delay visual
+    // En producción: instanciar @noir-lang/noir_js + backend_barretenberg con
+    // el artifact compilado (circuits/target/zk_roulette.json)
+    //
+    // import { Noir } from '@noir-lang/noir_js';
+    // import { BarretenbergBackend } from '@noir-lang/backend_barretenberg';
+    // import circuit from './circuits/target/zk_roulette.json';
+    // const backend = new BarretenbergBackend(circuit);
+    // const noir = new Noir(circuit, backend);
+    // const { proof, publicInputs } = await noir.generateProof({
+    //   secret_number: state.secretNumber.toString(),
+    //   salt: fieldFromBytes(state.salt),
+    //   public_commitment: '0x' + Buffer.from(commitment_as_field).toString('hex'),
+    //   number_of_participants: n,
+    // });
+
+    const noirProof = await simulateNoirProof(state.secretNumber, state.salt, n, winnerIndex);
+    state.noirProof = noirProof;
+
+    setZkField("zk-proof-status", "✓ proof generado (ver JSON)", "ok");
+    const proofBlob = new Blob([JSON.stringify(noirProof, null, 2)], { type: "application/json" });
+    const proofUrl  = URL.createObjectURL(proofBlob);
+    const link = document.getElementById("noir-proof-link");
+    link.href = proofUrl;
+    link.download = `zk_proof_session_${state.sessionId}.json`;
+    link.style.display = "block";
+
+    log(`Noir proof: winner_index=${winnerIndex} (${state.secretNumber} % ${n} = ${winnerIndex})`, "ok");
+
+    // ── Paso 2: Animación de la ruleta ────────────────────────────────────
+    log("Girando ruleta…", "info");
+    const fullRotations = Math.floor(Math.random() * 4) + 6;    // 6-9 vueltas
+    const segmentAngle  = (Math.PI * 2) / n;
+    // El segmento ganador apunta hacia arriba (ángulo = 0)
+    const targetOffset  = Math.PI * 2 - (segmentAngle * winnerIndex + segmentAngle / 2);
+    const totalAngle    = rouletteAngle + fullRotations * Math.PI * 2 + targetOffset;
+
+    await new Promise(resolve => animateSpin(totalAngle, 5500, resolve));
+    drawRoulette(state.participants, winnerIndex);
+
+    // ── Paso 3: Llamar reveal_winner on-chain ─────────────────────────────
+    log("Enviando reveal_winner al contrato Soroban...", "info");
+
+    await invokeContract("reveal_winner", [
+      scU32(state.sessionId),
+      scU64(state.secretNumber),
+      scBytesN32(state.salt),
+    ]);
+
+    // ── Resultado ─────────────────────────────────────────────────────────
+    state.winnerIndex   = winnerIndex;
+    state.winnerAddress = state.participants[winnerIndex];
+    state.phase         = "REVEALED";
+
+    setZkField("zk-winner", `#${winnerIndex} (${state.winnerAddress?.slice(0, 10)}…)`, "ok");
+    setZkField("zk-secret", state.secretNumber.toString(), "ok");
+    setZkField("zk-salt",   shortHex(state.salt), "ok");
+
+    log(`reveal_winner confirmado on-chain ✓`, "ok");
+    log(`🏆 Ganador: #${winnerIndex + 1} — ${state.winnerAddress}`, "ok");
+
+    // Limpiar localStorage
+    localStorage.removeItem(`zk_roulette_${state.sessionId}`);
+
+    renderParticipants(winnerIndex);
+    updatePhaseUI();
+    showWinnerOverlay(winnerIndex, state.winnerAddress);
+
+  } catch (err) {
+    log(`Error en reveal: ${err.message}`, "error");
+    console.error(err);
+    alert("Error: " + err.message);
+    document.getElementById("spin-btn").disabled = false;
+  } finally {
+    hideSpinner("btn-reveal-spinner");
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  SIMULACIÓN DE NOIR PROOF
+//  En producción reemplazar con la llamada real a @noir-lang/noir_js
+// ─────────────────────────────────────────────────────────────────────────────
+async function simulateNoirProof(secretNumber, salt, numParticipants, winnerIndex) {
+  // Simula el delay de generación de proof con Barretenberg (~2-5s en desktop)
+  await new Promise(r => setTimeout(r, 1800 + Math.random() * 1200));
+
+  const commitment = await computeCommitment(secretNumber, salt);
+
+  return {
+    _note: "Proof simulado para demo. Reemplazar con noir_js en producción.",
+    circuit: "zk_roulette",
+    backend: "barretenberg/UltraPlonk",
+    public_inputs: {
+      public_commitment: "0x" + Array.from(commitment).map(b => b.toString(16).padStart(2,"0")).join(""),
+      number_of_participants: numParticipants,
+      winner_index: winnerIndex,
+    },
+    private_inputs_hash: "0x" + Array.from(
+      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(secretNumber.toString()))
+    ).map(b => b.toString(16).padStart(2,"0")).join("").slice(0, 32) + "…",
+    proof_bytes: "0x" + Array.from(randomBytes(32)).map(b => b.toString(16).padStart(2,"0")).join("") + "…",
+    verified: true,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  OVERLAY GANADOR
+// ─────────────────────────────────────────────────────────────────────────────
+function showWinnerOverlay(index, address) {
+  document.getElementById("winner-address-display").textContent = address || "—";
+  document.getElementById("winner-index-display").textContent   = `Participante #${index + 1}`;
+  document.getElementById("winner-overlay").classList.add("show");
+}
+
+window.closeWinnerOverlay = function () {
+  document.getElementById("winner-overlay").classList.remove("show");
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  INICIALIZACIÓN
+// ─────────────────────────────────────────────────────────────────────────────
+(function init() {
+  updatePhaseUI();
+  drawRoulette([]);
+
+  // Verificar Freighter al cargar
+  if (!window.freighterApi) {
+    log("Freighter no detectado. Instala la extensión: https://freighter.app", "warn");
+  } else {
+    // Auto-conectar si ya había dado permiso
+    window.freighterApi.isConnected().then(({ isConnected }) => {
+      if (isConnected) {
+        window.freighterApi.getPublicKey().then(key => {
+          if (key) {
+            state.publicKey = key;
+            const short = `${key.slice(0,6)}…${key.slice(-4)}`;
+            document.getElementById("wallet-dot").classList.add("on");
+            document.getElementById("wallet-label").textContent = short;
+            document.getElementById("wallet-btn").classList.add("connected");
+            log(`Wallet auto-conectada: ${key}`, "ok");
+          }
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+  }
+
+  // Actualizar ruleta cada vez que hay participantes (idle spin lento)
+  setInterval(() => {
+    if (!rouletteSpinning && state.phase !== "REVEALED") {
+      rouletteAngle += 0.003;
+      drawRoulette(state.participants, state.winnerIndex ?? -1);
+    }
+  }, 30);
+
+  log("ZK Roulette v1.0 listo · Stellar Testnet · Protocol 25", "ok");
+}());
+
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Prover.toml — Valores de ejemplo para probar el circuito localmente
+#
+#  USO:
+#    1. Compila el circuito:   nargo compile
+#    2. Genera la prueba:      nargo prove
+#    3. Verifica la prueba:    nargo verify
+#
+#  IMPORTANTE:
+#    El campo `commitment` debe calcularse ANTES con el script JS del frontend
+#    o con el helper de Noir. En producción, el frontend lo genera y lo envía
+#    al contrato Soroban en la fase Commit.
+#
+#  Para re-calcular el commitment en Noir/WASM, el frontend ejecuta:
+#    commitment = poseidon_bn254([secret_number, salt])
+#
+#  Los valores de este archivo son SÓLO para desarrollo/testing local.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Entradas PRIVADAS ────────────────────────────────────────────────────────
+
+# secret_number: número aleatorio del streamer (u64)
+# En producción: generado con crypto.getRandomValues() en el browser
+secret_number = "13"
+
+# salt: valor de campo aleatorio para prevenir brute-force
+# En producción: 32 bytes aleatorios convertidos a Field element
+salt = "0x000000000000000000000000000000000000000000000000001a2b3c4d5e6f"
+
+# ── Entradas PÚBLICAS ─────────────────────────────────────────────────────────
+
+# public_commitment: Poseidon(secret_number, salt)
+# Este valor se almacena on-chain en la fase Commit del contrato Soroban.
+# Para obtenerlo con nargo: ejecuta `nargo execute` y toma el hash calculado,
+# o usa el script `scripts/compute_commitment.js` del frontend.
+#
+# ⚠️  Este valor de ejemplo es un placeholder. Debes reemplazarlo con el
+#     hash real calculado para (secret_number=13, salt=0x1a2b3c4d5e6f).
+public_commitment = "0x1f9b8c7a4e3d2f1e0b9a8765432109abcdef1234567890abcdef1234567890ab"
+
+# number_of_participants: total de participantes registrados on-chain
+# Debe coincidir con el valor almacenado en el contrato al momento del reveal.
+number_of_participants = "5"
+
+# ── Salida Esperada ───────────────────────────────────────────────────────────
+# winner_index = secret_number % number_of_participants = 13 % 5 = 3
+# (participante en el índice 3, base 0)
