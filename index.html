@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,9 +8,7 @@
   <!-- Stellar SDK (Soroban + RPC) -->
   <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@13/dist/stellar-sdk.min.js"></script>
 
-  <!-- ══════════════════════════════════════════════════════════════════════
-       ESTILOS — Tema espacial / cósmico
-       ══════════════════════════════════════════════════════════════════ -->
+  <!-- Cosmic theme styles -->
   <style>
     /* ── Variables ──────────────────────────────────────────────────────── */
     :root {
@@ -18,10 +16,10 @@
       --bg-card:    #0b0b20;
       --bg-panel:   #0f0f2a;
       --border:     #1e1e50;
-      --accent-1:   #7c3aed;   /* violeta nebulosa */
-      --accent-2:   #0ea5e9;   /* azul estrella    */
-      --accent-3:   #f59e0b;   /* dorado corona    */
-      --accent-4:   #10b981;   /* verde cometa     */
+      --accent-1:   #7c3aed;
+      --accent-2:   #0ea5e9;
+      --accent-3:   #f59e0b;
+      --accent-4:   #10b981;
       --text-main:  #e2e8f0;
       --text-muted: #64748b;
       --glow-1:     rgba(124, 58, 237, 0.35);
@@ -54,7 +52,7 @@
       pointer-events: none;
     }
 
-    /* Nebulosas de fondo (purely CSS) */
+    /* Background nebulae */
     body::before {
       content: '';
       position: fixed;
@@ -87,7 +85,7 @@
       padding: 24px 16px 64px;
     }
 
-    /* ── Cabecera ───────────────────────────────────────────────────────── */
+    /* Header */
     header {
       display: flex;
       align-items: center;
@@ -131,7 +129,7 @@
       text-transform: uppercase;
     }
 
-    /* ── Botón de wallet ────────────────────────────────────────────────── */
+    /* ── Wallet button ────────────────────────────────────────────────── */
     #wallet-btn {
       display: flex;
       align-items: center;
@@ -162,7 +160,7 @@
     }
     .wallet-dot.on { background: var(--accent-4); box-shadow: 0 0 6px var(--accent-4); }
 
-    /* ── Indicador de Fase ──────────────────────────────────────────────── */
+    /* Phase indicator */
     .phase-bar {
       display: flex;
       align-items: center;
@@ -196,7 +194,7 @@
       color: var(--accent-4);
     }
 
-    /* ── Cuadrícula central ─────────────────────────────────────────────── */
+    /* ── Main grid ─────────────────────────────────────────────── */
     .main-grid {
       display: grid;
       grid-template-columns: 1fr 380px;
@@ -207,7 +205,7 @@
       .main-grid { grid-template-columns: 1fr; }
     }
 
-    /* ── Tarjeta genérica ───────────────────────────────────────────────── */
+    /* ── Generic card ───────────────────────────────────────────────── */
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -373,7 +371,7 @@
       box-shadow: 0 0 0 3px rgba(14,165,233,.12);
     }
 
-    /* ── Participantes ──────────────────────────────────────────────────── */
+    /* Participants */
     #participants-grid {
       display: flex;
       flex-direction: column;
@@ -458,7 +456,7 @@
     .zk-value.warn { color: var(--accent-3); }
     .zk-value.pending { color: var(--text-muted); font-style: italic; }
 
-    /* ── Log de eventos ─────────────────────────────────────────────────── */
+    /* Activity log */
     #event-log {
       max-height: 160px;
       overflow-y: auto;
@@ -482,7 +480,7 @@
     .log-entry.warn  { border-color: var(--accent-3); color: #fcd34d; }
     .log-entry.error { border-color: #ef4444; color: #fca5a5; }
 
-    /* ── Ganador overlay ────────────────────────────────────────────────── */
+    /* Winner overlay */
     #winner-overlay {
       display: none;
       position: fixed;
@@ -607,31 +605,31 @@
 </head>
 <body>
 
-<!-- Canvas de estrellas animadas -->
+<!-- Animated star background -->
 <canvas id="stars-canvas"></canvas>
 
-<!-- Overlay ganador -->
+<!-- Winner overlay -->
 <div id="winner-overlay">
   <div class="winner-card">
     <div class="winner-trophy">🏆</div>
-    <div class="winner-title">¡Ganador Revelado!</div>
-    <div class="winner-subtitle">Sorteo verificado con ZK Proof · Stellar Protocol 25</div>
+    <div class="winner-title">Winner Revealed!</div>
+    <div class="winner-subtitle">Draw verified with ZK Proof · Stellar Protocol 25</div>
     <div id="winner-address-display" class="winner-address">—</div>
-    <div id="winner-index-display" class="winner-index-badge">Índice #—</div>
+    <div id="winner-index-display" class="winner-index-badge">Entry #—</div>
     <button class="btn btn-secondary" style="width:100%" onclick="closeWinnerOverlay()">
-      Cerrar
+      Close
     </button>
   </div>
 </div>
 
 <div id="app">
 
-  <!-- ── Cabecera ───────────────────────────────────────────────────── -->
+  <!-- Header -->
   <header>
     <div class="logo">
       <div class="logo-icon">🎰</div>
       <div class="logo-text">
-        <h1>ZK Roulette</h1>
+        <h1>Z-Spin</h1>
         <p>Provable Randomness · Stellar Hackathon 2026</p>
       </div>
     </div>
@@ -642,25 +640,25 @@
       </div>
       <button id="wallet-btn" onclick="connectWallet()">
         <div class="wallet-dot" id="wallet-dot"></div>
-        <span id="wallet-label">Conectar Freighter</span>
+        <span id="wallet-label">Connect Freighter</span>
       </button>
     </div>
   </header>
 
-  <!-- ── Barra de fases ─────────────────────────────────────────────── -->
+  <!-- Phase bar -->
   <div class="phase-bar">
     <div class="phase-step active" id="phase-0">① Commit</div>
-    <div class="phase-step" id="phase-1">② Registro</div>
-    <div class="phase-step" id="phase-2">③ Cerrar</div>
-    <div class="phase-step" id="phase-3">④ Revelar</div>
-    <div class="phase-step" id="phase-4">⑤ Ganador</div>
+    <div class="phase-step" id="phase-1">② Register</div>
+    <div class="phase-step" id="phase-2">③ Close</div>
+    <div class="phase-step" id="phase-3">④ Reveal</div>
+    <div class="phase-step" id="phase-4">⑤ Winner</div>
   </div>
 
-  <!-- ── Stats ─────────────────────────────────────────────────────── -->
+  <!-- Stats -->
   <div class="stats-strip">
     <div class="stat-box">
       <div class="stat-value" id="stat-participants">0</div>
-      <div class="stat-label">Participantes</div>
+      <div class="stat-label">Participants</div>
     </div>
     <div class="stat-box">
       <div class="stat-value" id="stat-session">—</div>
@@ -668,17 +666,17 @@
     </div>
     <div class="stat-box">
       <div class="stat-value" id="stat-phase">IDLE</div>
-      <div class="stat-label">Fase</div>
+      <div class="stat-label">Phase</div>
     </div>
   </div>
 
-  <!-- ── Grid principal ────────────────────────────────────────────── -->
+  <!-- Main grid -->
   <div class="main-grid">
 
-    <!-- Columna izquierda: Ruleta + Acciones -->
+    <!-- Left column: Roulette + Actions -->
     <div style="display:flex;flex-direction:column;gap:20px;">
 
-      <!-- Ruleta animada -->
+      <!-- Animated roulette -->
       <div class="card">
         <div class="roulette-wrap">
           <div class="roulette-outer">
@@ -686,94 +684,94 @@
             <canvas id="roulette-canvas" width="300" height="300"></canvas>
           </div>
           <button id="spin-btn" class="btn btn-gold" onclick="spinRoulette()" disabled>
-            🎰 Girar Ruleta
+            🎰 Spin the Wheel
           </button>
         </div>
       </div>
 
-      <!-- Panel de acciones por fase -->
+      <!-- Action panel (phase-aware) -->
       <div class="card" id="action-panel">
 
-        <!-- Fase 0: Commit -->
+        <!-- Phase 0: Commit -->
         <div id="panel-commit">
-          <div class="card-title"><span class="icon">🔒</span> Fase Commit — Registrar Sorteo</div>
+          <div class="card-title"><span class="icon">🔒</span> Commit Phase — Start Draw</div>
           <p class="text-muted" style="margin-bottom:16px">
-            Genera un número secreto local y publica el hash on-chain antes de conocer los participantes.
-            Esto garantiza que el sorteo no puede manipularse.
+            Generate a local secret number and publish its hash on-chain before participants register.
+            This guarantees the draw cannot be manipulated.
           </p>
           <div class="input-group">
-            <label>Session ID (número único para este sorteo)</label>
-            <input type="number" id="input-session-id" placeholder="Ej: 1001" min="1" max="999999" />
+            <label>Session ID (unique number for this draw)</label>
+            <input type="number" id="input-session-id" placeholder="e.g. 1001" min="1" max="999999" />
           </div>
           <button class="btn btn-primary" onclick="doCommit()">
             <span id="btn-commit-spinner"></span>
-            🔒 Publicar Commitment
+            🔒 Publish Commitment
           </button>
         </div>
 
-        <!-- Fase 1: Registro -->
+        <!-- Phase 1: Registration -->
         <div id="panel-register" style="display:none">
-          <div class="card-title"><span class="icon">👥</span> Fase Registro — Participantes</div>
+          <div class="card-title"><span class="icon">👥</span> Registration Phase — Add Participants</div>
           <p class="text-muted" style="margin-bottom:16px">
-            Los espectadores se registran en el sorteo. El streamer cierra inscripciones cuando
-            todos estén listos.
+            Viewers register for the draw. The streamer closes registrations when
+            everyone is ready.
           </p>
           <div class="input-group">
-            <label>Dirección del participante (G...)</label>
+            <label>Participant address (G...)</label>
             <input type="text" id="input-participant" placeholder="GABC...XYZ" style="margin-bottom:8px" />
           </div>
           <button class="btn btn-secondary" style="margin-bottom:12px" onclick="doRegister()">
             <span id="btn-register-spinner"></span>
-            ➕ Registrar Participante
+            ➕ Register Participant
           </button>
           <div class="divider"></div>
           <button class="btn btn-primary" onclick="doCloseRegistrations()">
             <span id="btn-close-spinner"></span>
-            🔐 Cerrar Inscripciones
+            🔐 Close Registrations
           </button>
         </div>
 
-        <!-- Fase 2: Reveal -->
+        <!-- Phase 2: Reveal -->
         <div id="panel-reveal" style="display:none">
-          <div class="card-title"><span class="icon">⚡</span> Fase Reveal — Revelar Ganador</div>
+          <div class="card-title"><span class="icon">⚡</span> Reveal Phase — Announce Winner</div>
           <p class="text-muted" style="margin-bottom:16px">
-            La ruleta girará mientras se verifica el proof. El contrato verificará que
-            <code>SHA256(secreto || salt) == commitment</code> on-chain y calculará el ganador.
+            The wheel spins while the proof is verified. The contract checks that
+            <code>SHA256(secret || salt) == commitment</code> on-chain y computes the winner.
           </p>
           <button class="btn btn-gold" onclick="doReveal()">
             <span id="btn-reveal-spinner"></span>
-            🎰 Revelar Ganador con ZK Proof
+            🎰 Reveal Winner with ZK Proof
           </button>
         </div>
 
       </div><!-- /action-panel -->
 
-      <!-- Lista de participantes -->
+      <!-- Participants list -->
       <div class="card">
-        <div class="card-title"><span class="icon">👥</span> Participantes <span id="participants-count-badge" style="margin-left:auto;font-size:.8rem;color:var(--text-muted)">0</span></div>
+        <div class="card-title"><span class="icon">👥</span> Participants <span id="participants-count-badge" style="margin-left:auto;font-size:.8rem;color:var(--text-muted)">0</span></div>
         <div id="participants-grid">
           <p class="text-muted" style="text-align:center;padding:16px 0">
-            No hay participantes aún.
+            No participants yet.
           </p>
         </div>
       </div>
 
     </div><!-- /left column -->
 
-    <!-- Columna derecha: ZK Info + Log -->
+    <!-- Right column: ZK Info + Log -->
     <div class="side-panel">
 
-      <!-- Info ZK Proof -->
+      <!-- ZK Proof info -->
       <div class="card">
-        <div class="card-title"><span class="icon">🧮</span> Datos ZK Commit-Reveal</div>
+        <div class="card-title"><span class="icon">🧮</span> ZK Commit-Reveal Data</div>
         <div class="zk-status-box">
           <div class="zk-row">
-            <span class="zk-label">Secreto</span>
-            <span class="zk-value pending" id="zk-secret">oculto</span>
+            <span class="zk-label">Secret</span>
+            <span class="zk-value pending" id="zk-secret">hidden</span>
           </div>
           <div class="zk-row">
             <span class="zk-label">Salt</span>
-            <span class="zk-value pending" id="zk-salt">oculto</span>
+            <span class="zk-value pending" id="zk-salt">hidden</span>
           </div>
           <div class="zk-row">
             <span class="zk-label">Commitment</span>
@@ -781,10 +779,10 @@
           </div>
           <div class="zk-row">
             <span class="zk-label">On-chain</span>
-            <span class="zk-value pending" id="zk-onchain">pendiente</span>
+            <span class="zk-value pending" id="zk-onchain">pending</span>
           </div>
           <div class="zk-row">
-            <span class="zk-label">Participantes</span>
+            <span class="zk-label">Participants</span>
             <span class="zk-value pending" id="zk-participants">0</span>
           </div>
           <div class="zk-row">
@@ -793,49 +791,49 @@
           </div>
           <div class="zk-row">
             <span class="zk-label">Noir Proof</span>
-            <span class="zk-value pending" id="zk-proof-status">pendiente</span>
+            <span class="zk-value pending" id="zk-proof-status">pending</span>
           </div>
         </div>
         <div style="margin-top:12px">
           <a id="noir-proof-link" href="#" style="display:none;font-size:.78rem;color:var(--accent-2)">
-            Ver proof completo (JSON) →
+            View full proof (JSON) →
           </a>
         </div>
       </div>
 
-      <!-- Cómo funciona -->
+      <!-- How it works -->
       <div class="card">
-        <div class="card-title"><span class="icon">🔬</span> ¿Cómo funciona?</div>
+        <div class="card-title"><span class="icon">🔬</span> How does it work?</div>
         <div style="font-size:.82rem;line-height:1.6;color:var(--text-muted)">
           <p style="margin-bottom:8px">
             <strong style="color:var(--accent-2)">1. Commit:</strong>
-            El streamer genera un número secreto y calcula
-            <code>SHA-256(secreto || salt)</code> localmente.
-            Sube ese hash al contrato Soroban. El secreto nunca sale del browser.
+            The streamer generates a secret number and computes
+            <code>SHA-256(secret || salt)</code> locally.
+            The hash is uploaded to the Soroban contract. The secret never leaves the browser.
           </p>
           <p style="margin-bottom:8px">
-            <strong style="color:var(--accent-2)">2. Registro:</strong>
-            Los participantes se inscriben on-chain. El streamer no puede elegir
-            el ganador porque ya comprometió el secreto antes.
+            <strong style="color:var(--accent-2)">2. Register:</strong>
+            Participants sign up on-chain. The streamer cannot choose the winner
+            because they already committed the secret beforehand.
           </p>
           <p style="margin-bottom:8px">
             <strong style="color:var(--accent-2)">3. Reveal:</strong>
-            El contrato verifica que <code>SHA-256(secreto || salt) == commitment</code>
-            y calcula <code>winner = secreto % participantes</code>.
-            Un circuito Noir genera la prueba formal para auditoría pública.
+            The contract verifies that <code>SHA-256(secret || salt) == commitment</code>
+            and computes <code>winner = secret % participants</code>.
+            A Noir circuit generates a formal proof for public auditing.
           </p>
           <p>
-            <strong style="color:var(--accent-3)">Garantía:</strong>
-            Nadie, ni el streamer, puede manipular el resultado.
+            <strong style="color:var(--accent-3)">Guarantee:</strong>
+            Nobody, not even the streamer, can manipulate the result.
           </p>
         </div>
       </div>
 
-      <!-- Log de eventos -->
+      <!-- Activity log -->
       <div class="card">
-        <div class="card-title"><span class="icon">📡</span> Log de Actividad</div>
+        <div class="card-title"><span class="icon">📡</span> Activity Log</div>
         <div id="event-log">
-          <div class="log-entry info">Sistema inicializado. Conecta tu wallet Freighter.</div>
+          <div class="log-entry info">System ready. Connect your Freighter wallet.</div>
         </div>
       </div>
 
@@ -848,11 +846,11 @@
      ══════════════════════════════════════════════════════════════════ -->
 <script type="module">
 // ─────────────────────────────────────────────────────────────────────────────
-//  CONFIGURACIÓN — Actualiza CONTRACT_ID tras ejecutar scripts/deploy.sh
+//  CONFIG — Update CONTRACT_ID after running scripts/deploy.sh
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CONFIG = {
-  CONTRACT_ID: "REEMPLAZA_CON_TU_CONTRACT_ID",          // ← después del deploy
+  CONTRACT_ID: "REPLACE_WITH_YOUR_CONTRACT_ID",
   GAME_HUB:    "CB4VZAT2U3UC6XFK3N23SKRF2NDCMP3QHJYMCHHFMZO7MRQO6DQ2EMYG",
   NETWORK:     "TESTNET",
   NETWORK_PASSPHRASE: "Test SDF Network ; September 2015",
@@ -861,7 +859,7 @@ const CONFIG = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ESTADO GLOBAL
+//  GLOBAL STATE
 // ─────────────────────────────────────────────────────────────────────────────
 const state = {
   phase:         "IDLE",  // IDLE | COMMITTED | OPEN | CLOSED | REVEALED
@@ -959,7 +957,7 @@ function drawRoulette(participants, highlightIndex = -1) {
     rouletteCtx.lineWidth = 1.5;
     rouletteCtx.stroke();
 
-    // Número del segmento
+    // Segment number
     if (n > 1) {
       const mid = start + step / 2;
       const tx  = Math.cos(mid) * (r * .62);
@@ -1013,7 +1011,7 @@ function log(msg, type = "info") {
   const el  = document.getElementById("event-log");
   const div = document.createElement("div");
   div.className = `log-entry ${type}`;
-  const ts = new Date().toLocaleTimeString("es", { hour12: false });
+  const ts = new Date().toLocaleTimeString("en", { hour12: false });
   div.textContent = `[${ts}] ${msg}`;
   el.appendChild(div);
   el.scrollTop = el.scrollHeight;
@@ -1026,10 +1024,10 @@ function updatePhaseUI() {
   const phases = ["IDLE","COMMITTED","OPEN","CLOSED","REVEALED"];
   const phaseLabels = {
     IDLE:      "COMMIT",
-    COMMITTED: "ABIERTO",
-    OPEN:      "ABIERTO",
-    CLOSED:    "CERRADO",
-    REVEALED:  "GANADOR",
+    COMMITTED: "OPEN",
+    OPEN:      "OPEN",
+    CLOSED:    "CLOSED",
+    REVEALED:  "WINNER",
   };
   const idx = { IDLE:0, COMMITTED:1, OPEN:1, CLOSED:2, REVEALED:4 }[state.phase] ?? 0;
 
@@ -1043,12 +1041,12 @@ function updatePhaseUI() {
   document.getElementById("stat-participants").textContent = state.participants.length;
   document.getElementById("participants-count-badge").textContent = state.participants.length;
 
-  // Mostrar panel de acción correcto
+  // Show correct action panel
   document.getElementById("panel-commit").style.display   = (state.phase === "IDLE") ? "" : "none";
   document.getElementById("panel-register").style.display = ["COMMITTED","OPEN"].includes(state.phase) ? "" : "none";
   document.getElementById("panel-reveal").style.display   = (state.phase === "CLOSED") ? "" : "none";
 
-  // Botón girar
+  // Spin button
   document.getElementById("spin-btn").disabled = (state.phase !== "CLOSED");
 
   // Lista de participantes
@@ -1058,7 +1056,7 @@ function updatePhaseUI() {
 function renderParticipants(winnerIdx = -1) {
   const grid = document.getElementById("participants-grid");
   if (state.participants.length === 0) {
-    grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:16px 0">No hay participantes aún.</p>';
+    grid.innerHTML = '<p class="text-muted" style="text-align:center;padding:16px 0">No participants yet.</p>';
     return;
   }
   grid.innerHTML = state.participants.map((addr, i) => `
@@ -1084,19 +1082,19 @@ function shortHex(bytes) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  FREIGHTER WALLET
 // ─────────────────────────────────────────────────────────────────────────────
-// Freighter inyecta window.freighterApi globalmente cuando la extensión está
-// instalada. Fallback: pide al usuario que instale la extensión.
+// Freighter injects window.freighterApi globally when the extension is
+// installed. Fallback: asks the user to install the extension.
 
 function getFreighter() {
   if (window.freighterApi) return window.freighterApi;
-  throw new Error("Freighter no encontrado. Instala la extensión en: https://freighter.app");
+  throw new Error("Freighter not found. Install the extension at: https://freighter.app");
 }
 
 window.connectWallet = async function () {
   try {
     const freighter = getFreighter();
     const { publicKey } = await freighter.requestAccess();
-    if (!publicKey) throw new Error("Acceso denegado por el usuario");
+    if (!publicKey) throw new Error("Access denied by user");
 
     state.publicKey = publicKey;
     const short = `${publicKey.slice(0, 6)}…${publicKey.slice(-4)}`;
@@ -1112,16 +1110,16 @@ window.connectWallet = async function () {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  CRIPTOGRAFÍA LOCAL (Web Crypto API)
+//  LOCAL CRYPTO (Web Crypto API)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Genera N bytes criptográficamente seguros */
+/** Generates N cryptographically secure bytes */
 function randomBytes(n) {
   return crypto.getRandomValues(new Uint8Array(n));
 }
 
 /**
- * Calcula SHA-256(secret_number_be8 || salt_32) — idéntico a lib.rs
+ * Computes SHA-256(secret_number_be8 || salt_32) — identical to lib.rs
  * @param {BigInt} secretNumber  u64 big-endian
  * @param {Uint8Array} salt      32 bytes
  * @returns {Promise<Uint8Array>} 32 bytes
@@ -1150,13 +1148,13 @@ function getRpcServer() {
 }
 
 /**
- * Construye, simula, firma y envía una transacción de contrato.
- * @param {string}   method    Nombre del método del contrato
+ * Builds, simulates, signs and submits a contract transaction.
+ * @param {string}   method    Contract method name
  * @param {Array}    args      ScVals
  * @returns {Promise<any>}     Resultado del polling
  */
 async function invokeContract(method, args = []) {
-  if (!state.publicKey) throw new Error("Wallet no conectada");
+  if (!state.publicKey) throw new Error("Wallet not connected");
   const Sdk    = getSdk();
   const server = getRpcServer();
   const freighter = getFreighter();
@@ -1164,7 +1162,7 @@ async function invokeContract(method, args = []) {
   // 1. Cargar cuenta
   const account = await server.getAccount(state.publicKey);
 
-  // 2. Construir transacción
+  // 2. Build transaction
   const contract = new Sdk.Contract(CONFIG.CONTRACT_ID);
   const tx = new Sdk.TransactionBuilder(account, {
     fee: "200000",
@@ -1177,7 +1175,7 @@ async function invokeContract(method, args = []) {
   // 3. Simular (obtener footprint y fee correcto)
   const simResult = await server.simulateTransaction(tx);
   if (Sdk.SorobanRpc.Api.isSimulationError(simResult)) {
-    throw new Error(`Simulación fallida: ${simResult.error}`);
+    throw new Error(`Simulation failed: ${simResult.error}`);
   }
   const preparedTx = Sdk.SorobanRpc.assembleTransaction(tx, simResult).build();
 
@@ -1190,18 +1188,18 @@ async function invokeContract(method, args = []) {
   // 5. Enviar
   const sendResult = await server.sendTransaction(signedTx);
   if (sendResult.status === "ERROR") {
-    throw new Error(`Envío fallido: ${JSON.stringify(sendResult.errorResult)}`);
+    throw new Error(`Submission failed: ${JSON.stringify(sendResult.errorResult)}`);
   }
 
-  // 6. Polling hasta confirmación
+  // 6. Poll for confirmation
   let getResult;
   for (let i = 0; i < 30; i++) {
     await new Promise(r => setTimeout(r, 2000));
     getResult = await server.getTransaction(sendResult.hash);
     if (getResult.status === "SUCCESS") return getResult;
-    if (getResult.status === "FAILED")  throw new Error("Transacción fallida on-chain");
+    if (getResult.status === "FAILED")  throw new Error("Transaction failed on-chain");
   }
-  throw new Error("Timeout esperando confirmación");
+  throw new Error("Timeout waiting for confirmation");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1244,45 +1242,45 @@ function hideSpinner(id) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ACCIÓN 1 — COMMIT
+//  ACTION 1 — COMMIT
 // ─────────────────────────────────────────────────────────────────────────────
 window.doCommit = async function () {
   if (!state.publicKey) { alert("Conecta tu wallet primero"); return; }
 
   const sessionIdInput = document.getElementById("input-session-id").value.trim();
   if (!sessionIdInput || isNaN(sessionIdInput)) {
-    alert("Ingresa un Session ID numérico válido"); return;
+    alert("Enter a valid numeric Session ID"); return;
   }
   const sessionId = parseInt(sessionIdInput, 10);
 
   try {
     showSpinner("btn-commit-spinner");
-    log("Generando número secreto y salt localmente...", "info");
+    log("Generating secret number and salt locally...", "info");
 
-    // Generar secreto aleatorio (u64) — mínimo 1
+    // Generate random secret (u64) — minimum 1
     const secretBytes = randomBytes(8);
     const secretView  = new DataView(secretBytes.buffer);
     let secretNumber  = secretView.getBigUint64(0, false);
     if (secretNumber === 0n) secretNumber = 1n;
 
-    // Generar salt aleatorio (32 bytes)
+    // Generate random salt (32 bytes)
     const salt = randomBytes(32);
 
     // Calcular commitment
     const commitment = await computeCommitment(secretNumber, salt);
 
-    // Guardar en estado (NO se envía off-chain hasta el reveal)
+    // Store in state (NOT sent off-chain until reveal)
     state.secretNumber = secretNumber;
     state.salt         = salt;
     state.commitment   = commitment;
     state.sessionId    = sessionId;
 
     // Mostrar en UI (parcialmente)
-    setZkField("zk-secret", "****" + secretNumber.toString().slice(-4) + " (oculto)", "warn");
+    setZkField("zk-secret", "****" + secretNumber.toString().slice(-4) + " (hidden)", "warn");
     setZkField("zk-salt",   shortHex(salt) + " (local)", "warn");
     setZkField("zk-commitment", shortHex(commitment), "ok");
 
-    log(`Commitment calculado: ${shortHex(commitment)}`, "ok");
+    log(`Commitment computed: ${shortHex(commitment)}`, "ok");
     log("Enviando commitment al contrato Soroban...", "info");
 
     // Llamar commit_draw(streamer, session_id, commitment)
@@ -1295,7 +1293,7 @@ window.doCommit = async function () {
     setZkField("zk-onchain", "✓ confirmado en Testnet", "ok");
     log(`commit_draw(${sessionId}) confirmado on-chain ✓`, "ok");
 
-    // Guardar secreto en localStorage cifrado (para reload del browser)
+    // Store secret in localStorage in case of page reload
     const stored = {
       sessionId,
       secretNumber: secretNumber.toString(),
@@ -1317,16 +1315,16 @@ window.doCommit = async function () {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ACCIÓN 2 — REGISTRAR PARTICIPANTE
+//  ACTION 2 — REGISTER PARTICIPANT
 // ─────────────────────────────────────────────────────────────────────────────
 window.doRegister = async function () {
   if (!state.publicKey) { alert("Conecta tu wallet"); return; }
   const addr = document.getElementById("input-participant").value.trim();
   if (!addr || !addr.startsWith("G") || addr.length < 56) {
-    alert("Ingresa una dirección Stellar válida (G...)"); return;
+    alert("Enter a valid Stellar address (G...)"); return;
   }
   if (state.participants.includes(addr)) {
-    alert("Ese participante ya está registrado"); return;
+    alert("That participant is already registered"); return;
   }
 
   try {
@@ -1354,7 +1352,7 @@ window.doRegister = async function () {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ACCIÓN 3 — CERRAR INSCRIPCIONES
+//  ACTION 3 — CLOSE REGISTRATIONS
 // ─────────────────────────────────────────────────────────────────────────────
 window.doCloseRegistrations = async function () {
   if (state.participants.length < 2) {
@@ -1362,14 +1360,14 @@ window.doCloseRegistrations = async function () {
   }
   try {
     showSpinner("btn-close-spinner");
-    log("Cerrando inscripciones...", "info");
+    log("Closing registrations...", "info");
 
     await invokeContract("close_registrations", [scU32(state.sessionId)]);
 
     state.phase = "CLOSED";
     updatePhaseUI();
     log("Inscripciones cerradas. Lista de participantes congelada on-chain ✓", "ok");
-    log("El ganador se calculará con: secreto % " + state.participants.length, "info");
+    log("Winner will be: secret % " + state.participants.length, "info");
 
   } catch (err) {
     log(`Error al cerrar: ${err.message}`, "error");
@@ -1380,7 +1378,7 @@ window.doCloseRegistrations = async function () {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  BOTÓN GIRAR (solo animación — el reveal real está en doReveal)
+//  SPIN BUTTON (triggers reveal)
 // ─────────────────────────────────────────────────────────────────────────────
 window.spinRoulette = function () {
   if (rouletteSpinning) return;
@@ -1388,7 +1386,7 @@ window.spinRoulette = function () {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  ACCIÓN 4 — REVEAL WINNER
+//  ACTION 4 — REVEAL WINNER
 // ─────────────────────────────────────────────────────────────────────────────
 window.doReveal = async function () {
   if (!state.secretNumber || !state.salt) {
@@ -1399,9 +1397,9 @@ window.doReveal = async function () {
       state.secretNumber = BigInt(d.secretNumber);
       state.salt = new Uint8Array(d.salt);
       state.commitment = new Uint8Array(d.commitment);
-      log("Secreto recuperado de almacenamiento local", "warn");
+      log("Secret recovered from local storage", "warn");
     } else {
-      alert("No se encontró el secreto local. ¿Recargaste la página sin guardar?");
+      alert("Local secret not found. Did you reload the page without saving?");
       return;
     }
   }
@@ -1413,16 +1411,16 @@ window.doReveal = async function () {
     showSpinner("btn-reveal-spinner");
     document.getElementById("spin-btn").disabled = true;
 
-    // ── Paso 1: Generar Noir proof (simulado / off-chain) ─────────────────
-    log("Generando ZK proof con circuito Noir...", "info");
+    // ── Step 1: Generate Noir proof (simulated / off-chain) ─────────────────
+    log("Generating ZK proof with Noir circuit...", "info");
     setZkField("zk-proof-status", "generando…", "warn");
     drawRoulette(state.participants);
 
-    // Calcular winner_index localmente (mismo cálculo que el circuito Noir)
+    // Compute winner_index locally (same formula as the Noir circuit)
     const winnerIndex = Number(state.secretNumber % BigInt(n));
 
-    // Simular generación de proof con delay visual
-    // En producción: instanciar @noir-lang/noir_js + backend_barretenberg con
+    // Simulate proof generation with visual delay
+    // In production: instantiate @noir-lang/noir_js + backend_barretenberg with
     // el artifact compilado (circuits/target/zk_roulette.json)
     //
     // import { Noir } from '@noir-lang/noir_js';
@@ -1450,11 +1448,11 @@ window.doReveal = async function () {
 
     log(`Noir proof: winner_index=${winnerIndex} (${state.secretNumber} % ${n} = ${winnerIndex})`, "ok");
 
-    // ── Paso 2: Animación de la ruleta ────────────────────────────────────
+    // ── Step 2: Roulette spin animation ────────────────────────────────────
     log("Girando ruleta…", "info");
     const fullRotations = Math.floor(Math.random() * 4) + 6;    // 6-9 vueltas
     const segmentAngle  = (Math.PI * 2) / n;
-    // El segmento ganador apunta hacia arriba (ángulo = 0)
+    // The winner segment points upward (angle = 0)
     const targetOffset  = Math.PI * 2 - (segmentAngle * winnerIndex + segmentAngle / 2);
     const totalAngle    = rouletteAngle + fullRotations * Math.PI * 2 + targetOffset;
 
@@ -1480,7 +1478,7 @@ window.doReveal = async function () {
     setZkField("zk-salt",   shortHex(state.salt), "ok");
 
     log(`reveal_winner confirmado on-chain ✓`, "ok");
-    log(`🏆 Ganador: #${winnerIndex + 1} — ${state.winnerAddress}`, "ok");
+    log(`🏆 Winner: #${winnerIndex + 1} — ${state.winnerAddress}`, "ok");
 
     // Limpiar localStorage
     localStorage.removeItem(`zk_roulette_${state.sessionId}`);
@@ -1500,17 +1498,17 @@ window.doReveal = async function () {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  SIMULACIÓN DE NOIR PROOF
-//  En producción reemplazar con la llamada real a @noir-lang/noir_js
+//  NOIR PROOF SIMULATION
+//  In production replace with the real @noir-lang/noir_js call
 // ─────────────────────────────────────────────────────────────────────────────
 async function simulateNoirProof(secretNumber, salt, numParticipants, winnerIndex) {
-  // Simula el delay de generación de proof con Barretenberg (~2-5s en desktop)
+  // Simulates Barretenberg proof generation delay (~2-5s on desktop)
   await new Promise(r => setTimeout(r, 1800 + Math.random() * 1200));
 
   const commitment = await computeCommitment(secretNumber, salt);
 
   return {
-    _note: "Proof simulado para demo. Reemplazar con noir_js en producción.",
+    _note: "Simulated proof for demo. Replace with noir_js in production.",
     circuit: "zk_roulette",
     backend: "barretenberg/UltraPlonk",
     public_inputs: {
@@ -1528,7 +1526,7 @@ async function simulateNoirProof(secretNumber, salt, numParticipants, winnerInde
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  OVERLAY GANADOR
+//  WINNER OVERLAY
 // ─────────────────────────────────────────────────────────────────────────────
 function showWinnerOverlay(index, address) {
   document.getElementById("winner-address-display").textContent = address || "—";
@@ -1541,7 +1539,7 @@ window.closeWinnerOverlay = function () {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  INICIALIZACIÓN
+//  INIT
 // ─────────────────────────────────────────────────────────────────────────────
 (function init() {
   updatePhaseUI();
@@ -1549,9 +1547,9 @@ window.closeWinnerOverlay = function () {
 
   // Verificar Freighter al cargar
   if (!window.freighterApi) {
-    log("Freighter no detectado. Instala la extensión: https://freighter.app", "warn");
+    log("Freighter not detected. Install at: https://freighter.app", "warn");
   } else {
-    // Auto-conectar si ya había dado permiso
+    // Auto-connect if permission was already granted
     window.freighterApi.isConnected().then(({ isConnected }) => {
       if (isConnected) {
         window.freighterApi.getPublicKey().then(key => {
@@ -1576,7 +1574,7 @@ window.closeWinnerOverlay = function () {
     }
   }, 30);
 
-  log("ZK Roulette v1.0 listo · Stellar Testnet · Protocol 25", "ok");
+  log("ZK Roulette v1.0 ready · Stellar Testnet · Protocol 25", "ok");
 }());
 
 </script>
